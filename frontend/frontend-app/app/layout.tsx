@@ -2,13 +2,14 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
+import AuthGuard from "./AuthGuard"
 
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "RxJS Universe Journey",
-  description: "Learn RxJS through gamified space exploration",
-    generator: 'v0.dev'
+  title: "DevDive Universe Journey",
+  description: "Learn programming through gamified space exploration",
+  generator: 'v0.dev'
 }
 
 // Suppress ResizeObserver errors globally
@@ -34,7 +35,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <div id="resize-observer-error-suppressor" className="resize-observer-error" />
-        {children}
+        <AuthGuard>{children}</AuthGuard>
       </body>
     </html>
   )

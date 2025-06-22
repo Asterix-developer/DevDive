@@ -1,9 +1,8 @@
-import { collection, doc, getDocs, getDoc, setDoc, updateDoc, query, orderBy } from "firebase/firestore"
-import { db, isFirebaseAvailable } from "./firebase"
 import type { Planet, PlayerStats, Mission } from "@/types/game"
 
-// Mock data fallback
-const mockPlanets: Planet[] = [
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000" // fallback for dev
+
+export const mockPlanets: Planet[] = [
   {
     id: "observable-base",
     name: "Observable Base",
@@ -150,7 +149,7 @@ const mockPlanets: Planet[] = [
   },
 ]
 
-const mockMissions: Record<string, Mission> = {
+export const mockMissions: Record<string, Mission> = {
   "observable-base": {
     id: "observable-base",
     title: "Observable Base Station",
@@ -293,49 +292,32 @@ return results;
   },
 }
 
-class FirebaseService {
-  private useFirebase = false
+class BackendService {
+  private apiUrl: string
 
   constructor() {
-    this.useFirebase = isFirebaseAvailable()
-    if (this.useFirebase) {
-      console.log("FirebaseService: Using Firebase backend")
-    } else {
-      console.log("FirebaseService: Using mock data")
-    }
+    this.apiUrl = API_URL
   }
 
   async getPlanets(): Promise<Planet[]> {
-    if (!this.useFirebase || !db) {
-      return Promise.resolve(mockPlanets)
-    }
-
     try {
-      const planetsRef = collection(db, "planets")
-      const snapshot = await getDocs(query(planetsRef, orderBy("position.x")))
-      const planets = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }) as Planet)
-      return planets.length > 0 ? planets : mockPlanets
+      const res = await fetch(`${this.apiUrl}/api/planets`)
+      if (!res.ok) throw new Error("Failed to fetch planets")
+      const planets = await res.json()
+      return planets
     } catch (error) {
-      console.warn("Firebase getPlanets failed, using mock data:", error)
+      console.warn("Backend getPlanets failed, using mock data:", error)
       return mockPlanets
     }
   }
 
   async getMission(planetId: string): Promise<Mission | null> {
-    if (!this.useFirebase || !db) {
-      return Promise.resolve(mockMissions[planetId] || null)
-    }
-
     try {
-      const missionRef = doc(db, "missions", planetId)
-      const snapshot = await getDoc(missionRef)
-      if (snapshot.exists()) {
-        return { id: snapshot.id, ...snapshot.data() } as Mission
-      } else {
-        return mockMissions[planetId] || null
-      }
+      const res = await fetch(`${this.apiUrl}/api/missions/${planetId}`)
+      if (!res.ok) throw new Error("Failed to fetch mission")
+      return await res.json()
     } catch (error) {
-      console.warn("Firebase getMission failed, using mock data:", error)
+      console.warn("Backend getMission failed, using mock data:", error)
       return mockMissions[planetId] || null
     }
   }
@@ -348,31 +330,23 @@ class FirebaseService {
       captainRank: 2530,
       completedMissions: [],
     }
-
-    if (!this.useFirebase || !db) {
-      return Promise.resolve(defaultStats)
-    }
-
     try {
-      const playerRef = doc(db, "players", userId)
-      const snapshot = await getDoc(playerRef)
-      return snapshot.exists() ? ({ ...snapshot.data() } as PlayerStats) : defaultStats
+      const res = await fetch(`${this.apiUrl}/api/players/${userId}`)
+      if (!res.ok) throw new Error("Failed to fetch player stats")
+      return await res.json()
     } catch (error) {
-      console.warn("Firebase getPlayerStats failed, using default stats:", error)
+      console.warn("Backend getPlayerStats failed, using default stats:", error)
       return defaultStats
     }
   }
 
   async updatePlayerStats(userId: string, stats: PlayerStats): Promise<void> {
-    if (!this.useFirebase || !db) {
-      console.log("Mock: Updated player stats", stats)
-      return Promise.resolve()
-    }
-
     try {
-      const playerRef = doc(db, "players", userId)
-      await setDoc(playerRef, stats, { merge: true })
-      console.log("Player stats updated successfully")
+      await fetch(`${this.apiUrl}/api/players/${userId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(stats),
+      })
     } catch (error) {
       console.warn("Failed to update player stats:", error)
     }
@@ -383,35 +357,20 @@ class FirebaseService {
     missionId: string,
     reward: { fuel: number; artifacts: number; rank: number },
   ): Promise<void> {
-    if (!this.useFirebase || !db) {
-      console.log("Mock: Mission completed", { missionId, reward })
-      return Promise.resolve()
-    }
-
     try {
-      const playerRef = doc(db, "players", userId)
-      const playerDoc = await getDoc(playerRef)
-
-      if (playerDoc.exists()) {
-        const currentStats = playerDoc.data() as PlayerStats
-        const updatedStats: PlayerStats = {
-          ...currentStats,
-          fuel: currentStats.fuel + reward.fuel,
-          artifacts: currentStats.artifacts + reward.artifacts,
-          captainRank: currentStats.captainRank + reward.rank,
-          completedMissions: [...currentStats.completedMissions, missionId],
-        }
-        await updateDoc(playerRef, { ...updatedStats })
-        console.log("Mission completion updated successfully")
-      }
+      await fetch(`${this.apiUrl}/api/players/${userId}/complete-mission`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ missionId, reward }),
+      })
     } catch (error) {
       console.warn("Failed to complete mission:", error)
     }
   }
 
-  isUsingFirebase(): boolean {
-    return this.useFirebase
+  isUsingBackend(): boolean {
+    return true
   }
 }
 
-export const firebaseService = new FirebaseService()
+export const backendService = new BackendService()

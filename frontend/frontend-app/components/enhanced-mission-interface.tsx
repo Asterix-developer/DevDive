@@ -7,7 +7,7 @@ import MonacoCodeEditor from "@/components/monaco-code-editor"
 import TestRunner from "@/components/test-runner"
 import MarbleDiagram from "@/components/marble-diagram"
 import { ArrowLeft, Play, RotateCcw, Zap, Target, Award } from "lucide-react"
-import { firebaseService } from "@/lib/firebase-service"
+import { backendService } from "@/lib/firebase-service"
 
 interface EnhancedMissionInterfaceProps {
   planet: Planet
@@ -32,7 +32,7 @@ function EnhancedMissionInterface({ planet, onComplete, onBack }: EnhancedMissio
     const loadMission = async () => {
       setLoading(true)
       try {
-        const missionData = await firebaseService.getMission(planet.id)
+        const missionData = await backendService.getMission(planet.id)
         if (missionData) {
           setMission(missionData)
           setCode(missionData.initialCode)
@@ -163,13 +163,12 @@ function EnhancedMissionInterface({ planet, onComplete, onBack }: EnhancedMissio
         <div className="flex items-center space-x-4">
           <h2 className="text-xl font-bold text-cyan-400">{mission.title}</h2>
           <div
-            className={`px-3 py-1 rounded text-xs font-semibold ${
-              mission.difficulty === "easy"
-                ? "bg-green-500/20 text-green-400"
-                : mission.difficulty === "medium"
-                  ? "bg-yellow-500/20 text-yellow-400"
-                  : "bg-red-500/20 text-red-400"
-            }`}
+            className={`px-3 py-1 rounded text-xs font-semibold ${mission.difficulty === "easy"
+              ? "bg-green-500/20 text-green-400"
+              : mission.difficulty === "medium"
+                ? "bg-yellow-500/20 text-yellow-400"
+                : "bg-red-500/20 text-red-400"
+              }`}
           >
             {mission.difficulty.toUpperCase()}
           </div>

@@ -5,8 +5,8 @@ import { motion, AnimatePresence } from "framer-motion"
 import DraggableGalaxyMap from "@/components/draggable-galaxy-map"
 import PlayerDashboard from "@/components/player-dashboard"
 import EnhancedMissionInterface from "@/components/enhanced-mission-interface"
-import { firebaseService } from "@/lib/firebase-service"
 import type { Planet, PlayerStats } from "@/types/game"
+import { backendService } from "@/lib/firebase-service"
 
 const initialPlayerStats: PlayerStats = {
   fuel: 4400,
@@ -32,12 +32,12 @@ export default function RxJSUniverse() {
         console.log("Loading game data...")
 
         // Load planets
-        const planetsData = await firebaseService.getPlanets()
+        const planetsData = await backendService.getPlanets()
         console.log("Loaded planets:", planetsData.length)
         setPlanets(planetsData)
 
         // Load player stats (using mock user ID for now)
-        const stats = await firebaseService.getPlayerStats("demo-user")
+        const stats = await backendService.getPlayerStats("demo-user")
         console.log("Loaded player stats:", stats)
         setPlayerStats(stats)
 
@@ -92,7 +92,7 @@ export default function RxJSUniverse() {
     setPlayerStats(newStats)
 
     // Update backend (will use mock if Firebase unavailable)
-    firebaseService.updatePlayerStats("demo-user", newStats)
+    backendService.updatePlayerStats("demo-user", newStats)
 
     // Unlock next planets based on progress
     const updatedPlanets = planets.map((planet) => {
@@ -118,9 +118,9 @@ export default function RxJSUniverse() {
             animate={{ rotate: 360 }}
             transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
           />
-          <p className="text-cyan-400 text-lg">Initializing RxJS Universe...</p>
+          <p className="text-cyan-400 text-lg">Initializing DevDive...</p>
           <p className="text-gray-400 text-sm mt-2">
-            {firebaseService.isUsingFirebase() ? "Connecting to Firebase..." : "Loading offline data..."}
+            {backendService.isUsingBackend() ? "Connecting to your data..." : "Loading offline data..."}
           </p>
         </div>
       </div>
@@ -166,7 +166,7 @@ export default function RxJSUniverse() {
           <div className="text-cyan-400 font-mono text-sm">
             FUEL: {playerStats.fuel} | ARTIFACTS: {playerStats.artifacts.toFixed(2)} | RANK: {playerStats.captainRank}
           </div>
-          {!firebaseService.isUsingFirebase() && (
+          {!backendService.isUsingBackend() && (
             <div className="text-yellow-400 font-mono text-xs bg-yellow-400/10 px-2 py-1 rounded">OFFLINE MODE</div>
           )}
         </div>
@@ -177,7 +177,7 @@ export default function RxJSUniverse() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1 }}
         >
-          RxJS UNIVERSE
+          DevDive
         </motion.h1>
 
         <div className="text-cyan-400 font-mono text-sm">Space Cadet | Alpha-7</div>
