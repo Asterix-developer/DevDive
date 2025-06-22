@@ -1,1 +1,3 @@
-# DevDive
+# DevDive 
+
+Project devoted to learning
